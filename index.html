@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <style>
+body{
+  background-color: rgb(196, 239, 255);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0;
+  min-height: 100vh;                 
+  padding: 1rem; 
+  box-sizing: border-box; 
+}
+
+#content{
+  background-color: rgb(255, 255, 255);
+  border-radius: 70px;
+  display: flex;
+  align-items: center; 
+  flex-direction: column;
+  justify-content: center;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  width: clamp(300px,50vw,500px);
+  height: clamp(300px,50vw,500px);
+  padding: 20px;
+}
+
+#agua {
+  background-color: transparent;
+  width: 50%;
+  height: 50%;
+  border-radius: 50%;
+  border: 3px solid rgb(100, 100, 255);
+  overflow: hidden;
+  transition: border-color 0.8s ease-in-out;
+}
+
+#nivel{
+  animation:cubic-bezier(1, 0, 0, 1);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background: white;
+  transition: all 8s ease-in-out; 
+}
+
+.Button{
+  display: none;
+  border: 0;
+  cursor: pointer;
+  color: white;
+  border-radius: 50px;
+  padding: 10px 20px;
+}
+
+#ROJO{
+  background-color: rgb(189, 0, 0);
+}
+
+#ROJO:hover{
+  background-color: rgb(255, 23, 23);
+}
+
+#ROJO:active{
+  background-color: rgb(255, 47, 47);
+}
+
+#AMARILLO{
+  background-color: rgb(223, 200, 0);
+}
+
+#AMARILLO:hover{
+  background-color: rgb(235, 211, 0);
+}
+
+#AMARILLO:active{
+  background-color: rgb(255, 231, 15);
+}
+
+#VERDE{
+  background-color: rgb(0, 189, 28);
+}
+
+#VERDE:hover{
+  background-color: rgb(41, 224, 0);
+}
+
+#VERDE:active{
+  background-color: rgb(75, 255, 47);
+}
+
+#Cambio{
+  display: block;
+  margin: 10px 0 0 0;
+  background-color: rgb(6, 0, 189);
+}
+
+#Cambio:hover{
+  background-color: rgb(0, 82, 224);
+}
+
+#Cambio:active{
+  background-color: rgb(47, 64, 255);
+}
+
+h1, h2, p{
+  font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+  font-size: clamp(0.5em,3vw,1.5em);
+}
+</style>
+  </head>
+  <body>
+    
+<div id="content">
+	<h1 id="Titulo">IRisk - Automatico</h1>
+	<div id="agua">
+		<div id="nivel">
+			<h2>Pluviometro</h2>
+			<p id="Pluviometro">0L/m</p>
+		</div>
+	</div>
+	<p id="estado"></p>
+	<div style="display:flex;gap:10px">
+		<button class="Button" id="VERDE">Verde</button>
+		<button class="Button" id="AMARILLO">Amarillo</button>
+		<button class="Button" id="ROJO">Rojo</button>
+	</div>
+	<footer>
+		<button class="Button" id="Cambio"></button>
+	</footer>
+</div>
+    <script>
+const url = "https://io.adafruit.com/api/v2/CONSTRUKTORSAKADEMY/";
+const key = "/?X-AIO-Key=aio_GyqZ73TivbzRnmwzLhVJOtwgoHW8";
+let manual = false;
+let pluviometro;
+let alarm;
+
+const getData = async () => {
+  const data =
+    await fetch(url + "groups/irisk" + key)
+      .then(response => response.json())
+  return data.feeds;
+}
+
+const setAlarm = (state) => {
+  const data = {
+    "value": state
+  };
+  const request = fetch(url + "feeds/irisk.alerta-inundacion/data" + key, {
+    method: "POST",
+    headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+    body: JSON.stringify(data)
+  });
+  return request.then((response) => response.data);
+}
+
+const ROJO = () => {
+  document.getElementById("nivel").style.background = `linear-gradient(rgb(255, 176, 176) ${100 - pluviometro.last_value}%, red ${pluviometro.last_value}%)`;
+  document.getElementById("agua").style.border = "3px solid red";
+  document.getElementById("estado").innerHTML = "Estado: ¡Alerta de Inundación! 🔊";
+  (alarm.last_value != 2) ? setAlarm(2) : {}
+}
+
+const AMARILLO = () => {
+  document.getElementById("nivel").style.background = `linear-gradient(rgb(255, 244, 143) ${100 - pluviometro.last_value}%, rgb(255, 231, 15) ${pluviometro.last_value}%)`;
+  document.getElementById("agua").style.border = "3px solid rgb(223, 200, 0)";
+  document.getElementById("estado").innerHTML = "Estado: Inundación Media 🔉";
+  (alarm.last_value != 1) ? setAlarm(1) : {}
+}
+
+const VERDE = () => {
+  document.getElementById("nivel").style.background = `linear-gradient(transparent ${100 - pluviometro.last_value}%, rgb(203, 203, 255) ${pluviometro.last_value}%)`;
+  document.getElementById("agua").style.border = "3px solid rgb(100, 100, 255)";
+  document.getElementById("estado").innerHTML = "Estado: No hay inundación 🔈";
+  (alarm.last_value != 0) ? setAlarm(0) : {}
+}
+
+document.getElementById("VERDE").addEventListener("click", VERDE)
+document.getElementById("ROJO").addEventListener("click", ROJO)
+document.getElementById("AMARILLO").addEventListener("click", AMARILLO)
+document.getElementById("Cambio").addEventListener("click", () => { manual = !manual; actualizar() })
+
+const actualizar = async () => {
+  const iRisk = await getData();
+  pluviometro = iRisk.filter(value => value.id == 3102637)[0]
+  alarm = iRisk.filter(value => value.id == 3144002)[0]
+
+  console.log(`${pluviometro.name} = ${pluviometro.last_value} HORA: ${pluviometro.updated_at}`)
+  console.log(`${alarm.name} = ${alarm.last_value} HORA: ${alarm.updated_at}`)
+
+  document.getElementById("Pluviometro").innerHTML = pluviometro.last_value + "mm";
+
+  if (!manual) {
+    document.getElementById("Cambio").textContent = "Manual";
+    document.getElementById("Titulo").innerHTML = "IRisk - Automático 🤖";
+    document.getElementById("VERDE").style.display = "none";
+    document.getElementById("AMARILLO").style.display = "none";
+    document.getElementById("ROJO").style.display = "none";
+
+    if (pluviometro.last_value > 30) {
+      ROJO(pluviometro, alarm)
+    } else if (pluviometro.last_value < 10) {
+      VERDE(pluviometro, alarm)
+    } else {
+      AMARILLO(pluviometro, alarm)
+    }
+
+  } else {
+    document.getElementById("Cambio").textContent = "Automático";
+    document.getElementById("Titulo").innerHTML = "IRisk - Manual 🫵";
+    document.getElementById("VERDE").style.display = "block";
+    document.getElementById("AMARILLO").style.display = "block";
+    document.getElementById("ROJO").style.display = "block";
+  }
+}
+
+actualizar();
+
+let petitions = setInterval(actualizar, 3000)
+
+</script>
+  </body>
+</html>
